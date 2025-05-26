@@ -4,6 +4,7 @@
  * Author: Daeho Jeong <daehojeong@google.com>
  */
 #include <stdlib.h>
+#include <errno.h>
 #include <getopt.h>
 #include <time.h>
 #include <utime.h>
@@ -131,11 +132,16 @@ static int erofsfsck_parse_options_cfg(int argc, char **argv)
 				while (len > 1 && optarg[len - 1] == '/')
 					len--;
 
-				fsckcfg.extract_path = malloc(PATH_MAX);
-				if (!fsckcfg.extract_path)
-					return -ENOMEM;
-				strncpy(fsckcfg.extract_path, optarg, len);
-				fsckcfg.extract_path[len] = '\0';
+                                if (len > PATH_MAX) {
+                                        erofs_err("--extract path too long");
+                                        return -ENAMETOOLONG;
+                                }
+
+                                fsckcfg.extract_path = malloc(PATH_MAX + 1);
+                                if (!fsckcfg.extract_path)
+                                        return -ENOMEM;
+                                memcpy(fsckcfg.extract_path, optarg, len);
+                                fsckcfg.extract_path[len] = '\0';
 				/* if path is root, start writing from position 0 */
 				if (len == 1 && fsckcfg.extract_path[0] == '/')
 					len = 0;
